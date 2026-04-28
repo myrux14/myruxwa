@@ -1,0 +1,48 @@
+from core.database import get_connection
+
+
+def create_reading(asset_id, data):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO readings (
+            asset_id, date, ph, temperature, tds, calcium, alkalinity
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        asset_id,
+        data["date"],
+        data["ph"],
+        data["temperature"],
+        data["tds"],
+        data["calcium"],
+        data["alkalinity"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+
+def get_readings_by_asset(asset_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT * FROM readings
+        WHERE asset_id = ?
+        ORDER BY date DESC
+    """, (asset_id,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [dict(zip(row.keys(), row)) for row in rows]
+
+def delete_readings_by_asset(asset_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM readings WHERE asset_id = ?", (asset_id,))
+
+    conn.commit()
+    conn.close()
