@@ -1,6 +1,9 @@
 import streamlit as st
 from core.config import APP_NAME
 from modules.auth.ui import login
+from core.database import init_db
+
+init_db()
 
 # -----------------------------
 # CONFIG
