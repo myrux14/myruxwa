@@ -78,5 +78,25 @@ def init_db():
     )
     """)
 
+    # -----------------------------
+    # CREAR COMPANY DEFAULT
+    # -----------------------------
+    cursor.execute("""
+    INSERT OR IGNORE INTO companies (id, name)
+    VALUES (1, 'Default Company')
+    """)
+
+    # -----------------------------
+    # CREAR ADMIN SI NO EXISTE
+    # -----------------------------
+    cursor.execute("SELECT * FROM users WHERE username = ?", ("admin",))
+    existing_user = cursor.fetchone()
+
+    if not existing_user:
+        cursor.execute("""
+            INSERT INTO users (username, password, role, active, company_id)
+            VALUES (?, ?, ?, ?, ?)
+        """, ("admin", "admin123", "admin", 1, 1))
+
     conn.commit()
     conn.close()
