@@ -16,8 +16,9 @@ DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 # CONEXIÓN
 # -----------------------------
 def get_connection():
-    return sqlite3.connect(DB_PATH, check_same_thread=False)
-
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite3.Row  # 🔥 CLAVE
+    return conn
 
 # -----------------------------
 # INICIALIZAR BASE DE DATOS
