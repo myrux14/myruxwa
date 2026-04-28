@@ -8,11 +8,14 @@ from pathlib import Path
 # -----------------------------
 # CONEXIÓN
 # -----------------------------
+# 📌 Ruta segura en Render
+DB_PATH = Path("data/app.db")
+
+# crear carpeta si no existe
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
 def get_connection():
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row   # 🔥 ESTA LÍNEA ES LA CLAVE
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+    return sqlite3.connect(DB_PATH, check_same_thread=False)
 
 
 # -----------------------------
