@@ -26,16 +26,13 @@ def clear_readings(asset_id):
 
 
 # -----------------------------
-# CARGA DESDE EXCEL (ROBUSTA)
+# CARGA DESDE EXCEL (MEJORADA)
 # -----------------------------
 def load_readings_from_excel(asset_id, file):
 
     df = pd.read_excel(file)
-
-    # limpiar columnas
     df.columns = df.columns.str.strip().str.lower()
 
-    # 🔥 MAPEO FLEXIBLE REAL
     column_map = {
         "date": ["date", "fecha"],
         "ph": ["ph"],
@@ -58,11 +55,15 @@ def load_readings_from_excel(asset_id, file):
             return False, f"Falta columna: {key}"
         mapped[key] = col
 
-    # -----------------------------
-    # INSERTAR DATOS
-    # -----------------------------
-    for _, row in df.iterrows():
+    errores = 0
+    insertados = 0
+
+    for i, row in df.iterrows():
         try:
+            # manejar NaN
+            if pd.isna(row[mapped["ph"]]):
+                continue
+
             data = {
                 "date": str(pd.to_datetime(row[mapped["date"]]).date()),
                 "ph": float(row[mapped["ph"]]),
@@ -73,14 +74,11 @@ def load_readings_from_excel(asset_id, file):
             }
 
             create_reading(asset_id, data)
+            insertados += 1
 
         except Exception as e:
-            return False, f"Error en fila: {e}"
+            errores += 1
+            continue  # 🔥 no detener todo el proceso
 
-    return True, "Datos cargados correctamente"
-
-from modules.readings.repository import delete_readings_by_asset
-
-def clear_readings(asset_id):
-    delete_readings_by_asset(asset_id)
+    return True, f"Carga completada: {insertados} registros, {errores} errores"
 
