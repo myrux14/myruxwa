@@ -1,18 +1,18 @@
 import streamlit as st
-from core.config import APP_NAME
-from modules.auth.ui import login
+import pandas as pd
+
+from core.config import APP_NAME, ENV
 from core.database import init_db
+from modules.auth.ui import login
 
-import os
-import streamlit as st
+# UI ENV
+st.sidebar.info(f"Entorno: {ENV}")
 
-st.sidebar.caption(f"Entorno: {os.getenv('ENV', 'local')}")
+# SOLO en local
+if ENV == "local":
+    init_db()
 
-init_db()
-
-# -----------------------------
 # CONFIG
-# -----------------------------
 st.set_page_config(page_title=APP_NAME, layout="wide")
 
 # ----------------------------- 
@@ -180,9 +180,12 @@ if st.button("Guardar lectura", key="btn_save_reading"):
 from modules.readings.service import clear_readings
 
 if st.button("🗑️ Borrar historial", key="btn_delete_readings"):
-    clear_readings(asset_id)
-    st.success("Historial eliminado")
-    st.rerun()
+    if ENV == "prod":
+        st.error("No puedes borrar datos en producción")
+    else:
+        clear_readings(asset_id)
+        st.success("Historial eliminado")
+        st.rerun()
 
 
 

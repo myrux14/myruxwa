@@ -1,6 +1,18 @@
 # core/config.py
-
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# -----------------------------
+# CARGAR VARIABLES DE ENTORNO
+# -----------------------------
+load_dotenv()
+
+ENV = os.getenv("ENV", "local")
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL no está definida")
 
 # -----------------------------
 # BASE DEL PROYECTO
@@ -14,7 +26,7 @@ APP_NAME = "Water Analytics"
 APP_VERSION = "1.0.0"
 
 # -----------------------------
-# DATABASE
+# DATABASE (solo fallback local)
 # -----------------------------
 DB_PATH = BASE_DIR / "data" / "app.db"
 
@@ -33,6 +45,6 @@ RSI_MUYINCRUSTANTE = 6.0
 RSI_MUYCORROSIVO = 8.5
 
 # -----------------------------
-# DEBUG
+# DEBUG (solo en local)
 # -----------------------------
-DEBUG = True
+DEBUG = ENV == "local"
