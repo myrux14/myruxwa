@@ -3,6 +3,11 @@ from core.config import APP_NAME
 from modules.auth.ui import login
 from core.database import init_db
 
+import os
+import streamlit as st
+
+st.sidebar.caption(f"Entorno: {os.getenv('ENV', 'local')}")
+
 init_db()
 
 # -----------------------------

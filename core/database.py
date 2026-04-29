@@ -1,9 +1,11 @@
 # core/database.py
-
-import psycopg2
 import os
 from dotenv import load_dotenv
+import psycopg2
 
+# -----------------------------
+# CARGAR VARIABLES DE ENTORNO
+# -----------------------------
 load_dotenv()
 
 
@@ -11,8 +13,12 @@ load_dotenv()
 # CONEXIÓN
 # -----------------------------
 def get_connection():
-    import psycopg2
-    return psycopg2.connect(os.environ["DATABASE_URL"])
+    db_url = os.getenv("DATABASE_URL")
+
+    if not db_url:
+        raise ValueError("DATABASE_URL no está definida")
+
+    return psycopg2.connect(db_url)
 
 
 # -----------------------------
@@ -64,7 +70,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS readings (
         id SERIAL PRIMARY KEY,
         asset_id INTEGER REFERENCES assets(id),
-        date TEXT,
+        date DATE,  -- 🔥 mejor que TEXT
         ph REAL,
         temperature REAL,
         tds REAL,
@@ -85,7 +91,10 @@ def init_db():
     # -----------------------------
     # ADMIN USER
     # -----------------------------
-    cursor.execute("SELECT * FROM users WHERE username = %s", ("admin",))
+    cursor.execute(
+        "SELECT id FROM users WHERE username = %s",
+        ("admin",)
+    )
     existing_user = cursor.fetchone()
 
     if not existing_user:
