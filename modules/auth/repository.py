@@ -8,7 +8,7 @@ def get_user(username, password):
 
     cursor.execute("""
         SELECT * FROM users
-        WHERE username = ? AND password = ?
+        WHERE username = %s AND password = %s
     """, (username, password))
 
     user = cursor.fetchone()

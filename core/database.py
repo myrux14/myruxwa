@@ -1,24 +1,15 @@
 # core/database.py
 
-import sqlite3
-from pathlib import Path
-
-# -----------------------------
-# RUTA DB (RENDER SAFE)
-# -----------------------------
-DB_PATH = Path("data/app.db")
-
-# crear carpeta si no existe
-DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+import psycopg2
+import os
 
 
 # -----------------------------
 # CONEXIÓN
 # -----------------------------
 def get_connection():
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row  # 🔥 CLAVE
-    return conn
+    return psycopg2.connect(os.environ["DATABASE_URL"])
+
 
 # -----------------------------
 # INICIALIZAR BASE DE DATOS
@@ -27,77 +18,78 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
 
+    # -----------------------------
+    # TABLAS
+    # -----------------------------
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS companies (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         name TEXT NOT NULL
     )
     """)
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         username TEXT UNIQUE,
         password TEXT,
         role TEXT,
         active INTEGER,
-        company_id INTEGER,
-        FOREIGN KEY (company_id) REFERENCES companies(id)
+        company_id INTEGER REFERENCES companies(id)
     )
     """)
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS sites (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
-        company_id INTEGER,
-        FOREIGN KEY (company_id) REFERENCES companies(id)
+        company_id INTEGER REFERENCES companies(id)
     )
     """)
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS assets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
         type TEXT,
-        site_id INTEGER,
-        FOREIGN KEY (site_id) REFERENCES sites(id)
+        site_id INTEGER REFERENCES sites(id)
     )
     """)
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS readings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        asset_id INTEGER,
+        id SERIAL PRIMARY KEY,
+        asset_id INTEGER REFERENCES assets(id),
         date TEXT,
         ph REAL,
         temperature REAL,
         tds REAL,
         calcium REAL,
-        alkalinity REAL,
-        FOREIGN KEY (asset_id) REFERENCES assets(id)
+        alkalinity REAL
     )
     """)
 
     # -----------------------------
-    # CREAR COMPANY DEFAULT
+    # COMPANY DEFAULT
     # -----------------------------
     cursor.execute("""
-    INSERT OR IGNORE INTO companies (id, name)
+    INSERT INTO companies (id, name)
     VALUES (1, 'Default Company')
+    ON CONFLICT (id) DO NOTHING
     """)
 
     # -----------------------------
-    # CREAR ADMIN SI NO EXISTE
+    # ADMIN USER
     # -----------------------------
-    cursor.execute("SELECT * FROM users WHERE username = ?", ("admin",))
+    cursor.execute("SELECT * FROM users WHERE username = %s", ("admin",))
     existing_user = cursor.fetchone()
 
     if not existing_user:
         cursor.execute("""
             INSERT INTO users (username, password, role, active, company_id)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s)
         """, ("admin", "admin123", "admin", 1, 1))
 
     conn.commit()
+    cursor.close()
     conn.close()
