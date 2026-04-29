@@ -1,6 +1,10 @@
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
+# 🔥 SIEMPRE PRIMERO
+st.set_page_config(page_title="Water Analytics", layout="wide")
+
+# ahora sí imports
 from core.config import APP_NAME, ENV
 from core.database import init_db
 from modules.auth.ui import login
@@ -8,12 +12,9 @@ from modules.auth.ui import login
 # UI ENV
 st.sidebar.info(f"Entorno: {ENV}")
 
-# SOLO en local
+# init solo en local
 if ENV == "local":
     init_db()
-
-# CONFIG
-st.set_page_config(page_title=APP_NAME, layout="wide")
 
 # ----------------------------- 
 # # RESTAURAR SESIÓN DESDE URL 
