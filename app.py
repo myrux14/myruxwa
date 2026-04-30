@@ -1,12 +1,6 @@
 import pandas as pd
 import streamlit as st
 
-from core.config import ENV, DATABASE_URL
-import streamlit as st
-
-st.sidebar.write("ENV:", ENV)
-st.sidebar.write("DB:", DATABASE_URL[:50])
-
 # 🔥 SIEMPRE PRIMERO
 st.set_page_config(page_title="Water Analytics", layout="wide")
 
