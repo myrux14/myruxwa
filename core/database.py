@@ -1,17 +1,31 @@
 # core/database.py
 import psycopg2
-from core.config import DATABASE_URL
+import sqlite3
+from core.config import DATABASE_URL, DB_TYPE, DB_PATH
 
 
 # -----------------------------
 # CONEXIÓN
 # -----------------------------
 def get_connection():
-    return psycopg2.connect(DATABASE_URL)
+    if DB_TYPE == "postgres":
+        return psycopg2.connect(DATABASE_URL)
+    else:
+        return sqlite3.connect(DB_PATH)
 
 
 # -----------------------------
-# INICIALIZAR BASE DE DATOS
+# CURSOR (HELPER)
+# -----------------------------
+def get_cursor(conn):
+    if DB_TYPE == "postgres":
+        return conn.cursor()
+    else:
+        return conn.cursor()
+
+
+# -----------------------------
+# INIT DB (SOLO BASE MÍNIMA)
 # -----------------------------
 def init_db():
     conn = None
@@ -22,78 +36,54 @@ def init_db():
         cursor = conn.cursor()
 
         # -----------------------------
-        # TABLAS
+        # TABLAS BASE (SOLO SI NO USAS MIGRACIONES)
         # -----------------------------
-        cursor.execute("""
+        if DB_TYPE == "postgres":
+            id_type = "SERIAL PRIMARY KEY"
+        else:
+            id_type = "INTEGER PRIMARY KEY AUTOINCREMENT"
+
+        cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS companies (
-            id SERIAL PRIMARY KEY,
+            id {id_type},
             name TEXT NOT NULL
         )
         """)
 
-        cursor.execute("""
+        cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
+            id {id_type},
             username TEXT UNIQUE,
             password TEXT,
             role TEXT,
             active INTEGER,
-            company_id INTEGER REFERENCES companies(id)
-        )
-        """)
-
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS sites (
-            id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL,
-            company_id INTEGER REFERENCES companies(id)
-        )
-        """)
-
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS assets (
-            id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL,
-            type TEXT,
-            site_id INTEGER REFERENCES sites(id)
-        )
-        """)
-
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS readings (
-            id SERIAL PRIMARY KEY,
-            asset_id INTEGER REFERENCES assets(id),
-            date DATE,
-            ph REAL,
-            temperature REAL,
-            tds REAL,
-            calcium REAL,
-            alkalinity REAL
+            company_id INTEGER
         )
         """)
 
         # -----------------------------
-        # COMPANY DEFAULT
+        # DATA INICIAL
         # -----------------------------
-        cursor.execute("""
+        placeholder = "%s" if DB_TYPE == "postgres" else "?"
+
+        # company default
+        cursor.execute(f"""
         INSERT INTO companies (id, name)
         VALUES (1, 'Default Company')
-        ON CONFLICT (id) DO NOTHING
+        ON CONFLICT DO NOTHING
         """)
 
-        # -----------------------------
-        # ADMIN USER
-        # -----------------------------
+        # admin
         cursor.execute(
-            "SELECT id FROM users WHERE username = %s",
+            f"SELECT id FROM users WHERE username = {placeholder}",
             ("admin",)
         )
         existing_user = cursor.fetchone()
 
         if not existing_user:
-            cursor.execute("""
+            cursor.execute(f"""
                 INSERT INTO users (username, password, role, active, company_id)
-                VALUES (%s, %s, %s, %s, %s)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
             """, ("admin", "admin123", "admin", 1, 1))
 
         conn.commit()

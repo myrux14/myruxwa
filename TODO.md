@@ -1,1 +1,1 @@
-[ ] Comparar y sincronizar DB dev vs prod (estructura y migraciones)
+Después de que todo funcione, debes cambiar a: hash de contraseña (bcrypt)

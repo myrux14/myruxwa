@@ -9,10 +9,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ENV = os.getenv("ENV", "local")
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL no está definida")
 
 # -----------------------------
 # BASE DEL PROYECTO
@@ -20,15 +16,32 @@ if not DATABASE_URL:
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # -----------------------------
+# DATABASE CONFIG
+# -----------------------------
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# detectar tipo automáticamente
+if DATABASE_URL and DATABASE_URL.startswith("postgres"):
+    DB_TYPE = "postgres"
+else:
+    DB_TYPE = "sqlite"
+
+# fallback local
+DB_PATH = BASE_DIR / "data" / "app.db"
+
+# crear carpeta si no existe (solo sqlite)
+if DB_TYPE == "sqlite":
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+# validación en producción
+if DB_TYPE == "postgres" and not DATABASE_URL:
+    raise ValueError("DATABASE_URL no está definida para PostgreSQL")
+
+# -----------------------------
 # APP
 # -----------------------------
 APP_NAME = "Water Analytics"
 APP_VERSION = "1.0.0"
-
-# -----------------------------
-# DATABASE (solo fallback local)
-# -----------------------------
-DB_PATH = BASE_DIR / "data" / "app.db"
 
 # -----------------------------
 # SEGURIDAD
@@ -45,6 +58,6 @@ RSI_MUYINCRUSTANTE = 6.0
 RSI_MUYCORROSIVO = 8.5
 
 # -----------------------------
-# DEBUG (solo en local)
+# DEBUG
 # -----------------------------
 DEBUG = ENV == "local"
