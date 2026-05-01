@@ -1,8 +1,11 @@
 import pandas as pd
 import streamlit as st
 
+
 # 🔥 SIEMPRE PRIMERO
 st.set_page_config(page_title="Water Analytics", layout="wide")
+from core.migrations import run_migrations
+run_migrations()
 
 # ahora sí imports
 from core.config import APP_NAME, ENV

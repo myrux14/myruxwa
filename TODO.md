@@ -1,0 +1,1 @@
+[ ] Comparar y sincronizar DB dev vs prod (estructura y migraciones)
