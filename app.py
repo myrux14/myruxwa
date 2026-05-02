@@ -389,3 +389,14 @@ else:
 #if len(df_estable) < 20:
     #st.warning("⚠️ Se requieren al menos 20 datos en estado estable para definir la ventana operativa")
 
+mode = st.sidebar.radio(
+    "Modo",
+    ["Dashboard", "Admin"] if st.session_state.get("role") == "admin" else ["Dashboard"]
+)
+
+if mode == "Admin":
+    from modules.admin.ui import admin_panel
+    admin_panel()
+    st.stop()
+
+
