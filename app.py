@@ -33,6 +33,10 @@ if "token" in params:
 # -----------------------------
 # LOGIN
 # -----------------------------
+from core.env_check import check_environment
+
+db_info = check_environment()
+
 logged = login()
 
 if not logged:

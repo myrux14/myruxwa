@@ -1,38 +1,8 @@
 # modules/auth/repository.py
 from core.database import get_connection
 from core.db_utils import p
-from core.security import hash_password
-from core.security import verify_password
+from core.security import hash_password, verify_password
 
-
-def get_user(username, password):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute(f"""
-        SELECT id, username, password, role, active, company_id
-        FROM users
-        WHERE username = {p()}
-    """, (username,))
-
-    row = cursor.fetchone()
-
-    if not row:
-        cursor.close()
-        conn.close()
-        return None
-
-    columns = [desc[0] for desc in cursor.description]
-    user = dict(zip(columns, row))
-
-    cursor.close()
-    conn.close()
-
-    # 🔐 verificar password
-    if not verify_password(password, user["password"]):
-        return None
-
-    return user
 
 def row_to_dict(cursor, row):
     if not row:
@@ -40,6 +10,9 @@ def row_to_dict(cursor, row):
     columns = [desc[0] for desc in cursor.description]
     return dict(zip(columns, row))
 
+# -----------------------------
+# LOGIN
+# -----------------------------
 def get_user(username, password):
     conn = None
     cursor = None
@@ -48,14 +21,12 @@ def get_user(username, password):
         conn = get_connection()
         cursor = conn.cursor()
 
-        # 🔥 SOLO BUSCAR POR USERNAME
-        query = f"""
+        cursor.execute(f"""
             SELECT id, username, password, role, active, company_id
             FROM users
             WHERE username = {p()}
-        """
+        """, (username,))
 
-        cursor.execute(query, (username,))
         row = cursor.fetchone()
 
         if not row:
@@ -63,7 +34,7 @@ def get_user(username, password):
 
         user = row_to_dict(cursor, row)
 
-        # 🔐 VALIDAR PASSWORD CON BCRYPT
+        # 🔐 VALIDACIÓN BCRYPT
         if not verify_password(password, user["password"]):
             return None
 

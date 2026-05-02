@@ -2,13 +2,14 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 # -----------------------------
 # CARGAR VARIABLES DE ENTORNO
 # -----------------------------
 load_dotenv()
 
-ENV = os.getenv("ENV", "local")
+ENV = os.getenv("ENV", "local").lower()
 
 # -----------------------------
 # BASE DEL PROYECTO
@@ -20,22 +21,45 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # -----------------------------
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# detectar tipo automáticamente
-if DATABASE_URL and DATABASE_URL.startswith("postgres"):
-    DB_TYPE = "postgres"
+# 🔥 detectar tipo correctamente
+if DATABASE_URL:
+    if DATABASE_URL.startswith("postgres"):
+        DB_TYPE = "postgres"
+    else:
+        DB_TYPE = "unknown"
 else:
     DB_TYPE = "sqlite"
 
-# fallback local
+# fallback local (solo sqlite)
 DB_PATH = BASE_DIR / "data" / "app.db"
 
-# crear carpeta si no existe (solo sqlite)
 if DB_TYPE == "sqlite":
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-# validación en producción
-if DB_TYPE == "postgres" and not DATABASE_URL:
-    raise ValueError("DATABASE_URL no está definida para PostgreSQL")
+# 🔴 VALIDACIÓN FUERTE EN PRODUCCIÓN
+if ENV == "production" and not DATABASE_URL:
+    raise ValueError("❌ DATABASE_URL es obligatoria en producción")
+
+# -----------------------------
+# INFO DE CONEXIÓN (CLAVE PARA DEBUG)
+# -----------------------------
+def get_db_info():
+    if not DATABASE_URL:
+        return {
+            "engine": "sqlite",
+            "host": "local",
+            "db": str(DB_PATH),
+            "user": None
+        }
+
+    parsed = urlparse(DATABASE_URL)
+
+    return {
+        "engine": "postgres",
+        "host": parsed.hostname,
+        "db": parsed.path.replace("/", ""),
+        "user": parsed.username
+    }
 
 # -----------------------------
 # APP
