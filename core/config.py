@@ -21,30 +21,43 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # -----------------------------
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# 🔥 detectar tipo correctamente
-if DATABASE_URL:
-    if DATABASE_URL.startswith("postgres"):
-        DB_TYPE = "postgres"
-    else:
-        DB_TYPE = "unknown"
-else:
-    DB_TYPE = "sqlite"
+# 🔥 DETECCIÓN ROBUSTA
+def detect_db_type(url):
+    if not url:
+        return "sqlite"
 
-# fallback local (solo sqlite)
+    url = url.lower()
+
+    if url.startswith("postgres://") or url.startswith("postgresql://"):
+        return "postgres"
+
+    raise ValueError(f"❌ DATABASE_URL no soportada: {url}")
+
+DB_TYPE = detect_db_type(DATABASE_URL)
+
+# -----------------------------
+# SQLITE (LOCAL)
+# -----------------------------
 DB_PATH = BASE_DIR / "data" / "app.db"
 
 if DB_TYPE == "sqlite":
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-# 🔴 VALIDACIÓN FUERTE EN PRODUCCIÓN
-if ENV == "production" and not DATABASE_URL:
-    raise ValueError("❌ DATABASE_URL es obligatoria en producción")
+# -----------------------------
+# VALIDACIÓN PRODUCCIÓN
+# -----------------------------
+if ENV == "production":
+    if DB_TYPE != "postgres":
+        raise ValueError("❌ En producción debes usar PostgreSQL (Neon)")
+
+    if not DATABASE_URL:
+        raise ValueError("❌ DATABASE_URL es obligatoria en producción")
 
 # -----------------------------
-# INFO DE CONEXIÓN (CLAVE PARA DEBUG)
+# INFO DE CONEXIÓN
 # -----------------------------
 def get_db_info():
-    if not DATABASE_URL:
+    if DB_TYPE == "sqlite":
         return {
             "engine": "sqlite",
             "host": "local",

@@ -1,5 +1,5 @@
 from core.database import get_connection
-
+from core.db_utils import p
 
 # -----------------------------
 # HELPER
@@ -16,10 +16,10 @@ def create_reading(asset_id, data):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(f"""
         INSERT INTO readings (
             asset_id, date, ph, temperature, tds, calcium, alkalinity
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ) VALUES ({p()}, {p()}, {p()}, {p()}, {p()}, {p()}, {p()})
     """, (
         asset_id,
         data["date"],
@@ -42,9 +42,9 @@ def get_readings_by_asset(asset_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT * FROM readings
-        WHERE asset_id = %s
+        WHERE asset_id = {p()}
         ORDER BY date DESC
     """, (asset_id,))
 
@@ -64,8 +64,8 @@ def delete_readings_by_asset(asset_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        DELETE FROM readings WHERE asset_id = %s
+    cursor.execute(f"""
+        DELETE FROM readings WHERE asset_id = {p()}
     """, (asset_id,))
 
     conn.commit()

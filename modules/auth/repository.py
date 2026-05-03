@@ -49,7 +49,7 @@ def get_user(username, password):
             cursor.close()
         if conn:
             conn.close()
-
+    
 # -----------------------------
 # CREAR
 # -----------------------------

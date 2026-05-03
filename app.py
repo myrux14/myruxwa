@@ -16,8 +16,9 @@ from modules.auth.ui import login
 st.sidebar.info(f"Entorno: {ENV}")
 
 # init solo en local
-if ENV == "local":
+if ENV == "local" and "db_initialized" not in st.session_state:
     init_db()
+    st.session_state.db_initialized = True
 
 # ----------------------------- 
 # # RESTAURAR SESIÓN DESDE URL 
@@ -371,27 +372,26 @@ else:
 
 st.subheader("📊 Ventana Operativa (Estado Estable)")
 
-df_estable = df[df["Estado"] == "ideal"]
-
-if not df_estable.empty:
-
-    resumen = {
-        "pH": (df_estable["ph"].min(), df_estable["ph"].max()),
-        "Temperatura": (df_estable["temperature"].min(), df_estable["temperature"].max()),
-        "TDS": (df_estable["tds"].min(), df_estable["tds"].max()),
-        "Calcio": (df_estable["calcium"].min(), df_estable["calcium"].max()),
-        "Alcalinidad": (df_estable["alkalinity"].min(), df_estable["alkalinity"].max()),
-        "LSI": (df_estable["LSI"].min(), df_estable["LSI"].max())
-    }
-
-    for k, v in resumen.items():
-        st.write(f"{k}: {round(v[0],2)} – {round(v[1],2)}")
-
+# Validación primero
+if 'df' not in locals() or df is None or df.empty:
+    st.info("No hay datos suficientes para calcular ventana operativa")
 else:
-    st.info("No hay suficientes datos en estado estable")    
+    df_estable = df[df["Estado"] == "ideal"]
 
-#if len(df_estable) < 20:
-    #st.warning("⚠️ Se requieren al menos 20 datos en estado estable para definir la ventana operativa")
+    if df_estable.empty:
+        st.warning("No hay registros en estado estable")
+    else:
+        resumen = {
+            "pH": (df_estable["ph"].min(), df_estable["ph"].max()),
+            "Temperatura": (df_estable["temperature"].min(), df_estable["temperature"].max()),
+            "TDS": (df_estable["tds"].min(), df_estable["tds"].max()),
+            "Calcio": (df_estable["calcium"].min(), df_estable["calcium"].max()),
+            "Alcalinidad": (df_estable["alkalinity"].min(), df_estable["alkalinity"].max()),
+            "LSI": (df_estable["LSI"].min(), df_estable["LSI"].max())
+        }
+
+        for k, v in resumen.items():
+            st.write(f"{k}: {round(v[0], 2)} – {round(v[1], 2)}")
 
 mode = st.sidebar.radio(
     "Modo",

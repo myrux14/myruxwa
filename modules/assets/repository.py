@@ -1,5 +1,5 @@
 from core.database import get_connection
-
+from core.db_utils import p
 
 # -----------------------------
 # HELPER (CLAVE)
@@ -16,9 +16,9 @@ def get_assets_by_site(site_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT * FROM assets
-        WHERE site_id = %s
+        WHERE site_id = {p()}
     """, (site_id,))
 
     rows = cursor.fetchall()
@@ -37,9 +37,9 @@ def create_asset(name, type, site_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(f"""
         INSERT INTO assets (name, type, site_id)
-        VALUES (%s, %s, %s)
+        VALUES ({p()}, {p()}, {p()})
     """, (name, type, site_id))
 
     conn.commit()

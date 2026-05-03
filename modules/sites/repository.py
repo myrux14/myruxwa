@@ -1,5 +1,6 @@
 from core.database import get_connection
-
+from core.db_utils import p
+from core.config import DB_TYPE
 
 # -----------------------------
 # HELPER
@@ -16,9 +17,9 @@ def get_sites_by_company(company_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT * FROM sites
-        WHERE company_id = %s
+        WHERE company_id = {p()}
     """, (company_id,))
 
     rows = cursor.fetchall()
@@ -37,13 +38,16 @@ def create_site(name, company_id):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(f"""
         INSERT INTO sites (name, company_id)
-        VALUES (%s, %s)
-        RETURNING id
+        VALUES ({p()}, {p()})
     """, (name, company_id))
 
-    new_id = cursor.fetchone()[0]
+    # 🔥 SOLO POSTGRES SOPORTA RETURNING
+    if DB_TYPE == "postgres":
+        new_id = cursor.fetchone()[0]
+    else:
+        new_id = cursor.lastrowid
 
     conn.commit()
     cursor.close()
@@ -60,7 +64,7 @@ def get_site_by_id(site_id):
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT * FROM sites WHERE id = %s
+        SELECT * FROM sites WHERE id = {p()}
     """, (site_id,))
 
     row = cursor.fetchone()
