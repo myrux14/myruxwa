@@ -1,5 +1,2 @@
-from core.security import verify_password
-
-hash = "$2b$12$MNsEgJjGdSC0ZViZsWWdsODlKhGPcOzc37jibgZtySxIKHAkAh1ke"
-print(len(hash))
-print(verify_password("admin123", hash))
+from modules.analytics.service import calcular_lsi
+print(calcular_lsi(7.5, 25, 500, 150, 120))

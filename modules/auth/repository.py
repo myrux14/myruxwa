@@ -1,31 +1,93 @@
 # modules/auth/repository.py
+
 from core.database import get_connection
 from core.db_utils import p
 from core.security import hash_password, verify_password
 
 
+# -----------------------------
+# HELPERS
+# -----------------------------
 def row_to_dict(cursor, row):
+
     if not row:
         return None
-    columns = [desc[0] for desc in cursor.description]
+
+    columns = [
+        desc[0]
+        for desc in cursor.description
+    ]
+
     return dict(zip(columns, row))
+
+
+# -----------------------------
+# CONTAR ADMINS ACTIVOS
+# -----------------------------
+def count_active_admins():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            f"""
+            SELECT COUNT(*)
+            FROM users
+            WHERE role = {p()}
+            AND active = 1
+            """,
+            ("admin",)
+        )
+
+        total = cursor.fetchone()[0]
+
+        return total
+
+    except Exception as e:
+        print("Error count_active_admins:", e)
+        return 0
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
 
 # -----------------------------
 # LOGIN
 # -----------------------------
 def get_user(username, password):
+
     conn = None
     cursor = None
 
     try:
+
         conn = get_connection()
         cursor = conn.cursor()
 
-        cursor.execute(f"""
-            SELECT id, username, password, role, active, company_id
+        cursor.execute(
+            f"""
+            SELECT
+                id,
+                username,
+                password,
+                role,
+                active,
+                company_id
             FROM users
             WHERE username = {p()}
-        """, (username,))
+            """,
+            (username,)
+        )
 
         row = cursor.fetchone()
 
@@ -34,8 +96,11 @@ def get_user(username, password):
 
         user = row_to_dict(cursor, row)
 
-        # 🔐 VALIDACIÓN BCRYPT
-        if not verify_password(password, user["password"]):
+        # 🔐 validar password
+        if not verify_password(
+            password,
+            user["password"]
+        ):
             return None
 
         return user
@@ -45,166 +110,444 @@ def get_user(username, password):
         return None
 
     finally:
+
         if cursor:
             cursor.close()
+
         if conn:
             conn.close()
-    
+
+
 # -----------------------------
 # CREAR
 # -----------------------------
-def create_user(username, password, role, company_id):
-    conn = get_connection()
-    cursor = conn.cursor()
+def create_user(
+    username,
+    password,
+    role,
+    company_id
+):
+
+    conn = None
+    cursor = None
 
     try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # validar duplicado
         cursor.execute(
-            f"SELECT id FROM users WHERE username = {p()}",
+            f"""
+            SELECT id
+            FROM users
+            WHERE username = {p()}
+            """,
             (username,)
         )
 
-        # validar duplicado
         if cursor.fetchone():
             return False, "Usuario ya existe"
 
-        # 🔐 HASH PASSWORD
+        # 🔐 hash
         hashed_password = hash_password(password)
 
-        # insertar usuario
-        cursor.execute(f"""
-            INSERT INTO users (username, password, role, active, company_id)
-            VALUES ({p()}, {p()}, {p()}, {p()}, {p()})
-        """, (username, hashed_password, role, 1, company_id))
-        
+        # insertar
+        cursor.execute(
+            f"""
+            INSERT INTO users (
+                username,
+                password,
+                role,
+                active,
+                company_id
+            )
+            VALUES (
+                {p()},
+                {p()},
+                {p()},
+                {p()},
+                {p()}
+            )
+            """,
+            (
+                username,
+                hashed_password,
+                role,
+                1,
+                company_id
+            )
+        )
+
         conn.commit()
+
         return True, "Usuario creado"
 
     except Exception as e:
-        conn.rollback()
+
+        if conn:
+            conn.rollback()
+
         return False, str(e)
 
     finally:
-        cursor.close()
-        conn.close()
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
 
 # -----------------------------
 # LISTAR
 # -----------------------------
 def get_all_users():
-    conn = get_connection()
-    cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT id, username, role, active, company_id
-        FROM users
-        ORDER BY id DESC
-    """)
+    conn = None
+    cursor = None
 
-    rows = cursor.fetchall()
+    try:
 
-    columns = [desc[0] for desc in cursor.description]
-    users = [dict(zip(columns, row)) for row in rows]
+        conn = get_connection()
+        cursor = conn.cursor()
 
-    cursor.close()
-    conn.close()
+        cursor.execute("""
+            SELECT
+                u.id,
+                u.username,
+                u.role,
+                u.active,
+                c.name as company
 
-    return users
+            FROM users u
+
+            LEFT JOIN companies c
+                ON c.id = u.company_id
+
+            ORDER BY u.id DESC
+        """)
+
+        rows = cursor.fetchall()
+
+        columns = [
+            desc[0]
+            for desc in cursor.description
+        ]
+
+        users = [
+            dict(zip(columns, row))
+            for row in rows
+        ]
+
+        return users
+
+    except Exception as e:
+
+        print(
+            "Error get_all_users:",
+            e
+        )
+
+        return []
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
 
 # -----------------------------
 # ACTUALIZAR
 # -----------------------------
-def update_user(user_id, role, company_id):
-    conn = get_connection()
-    cursor = conn.cursor()
+def update_user(
+    user_id,
+    role,
+    company_id
+):
+
+    conn = None
+    cursor = None
 
     try:
-        cursor.execute(f"""
-            UPDATE users
-            SET role = {p()}, company_id = {p()}
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # obtener usuario actual
+        cursor.execute(
+            f"""
+            SELECT role, active
+            FROM users
             WHERE id = {p()}
-        """, (role, company_id, user_id))
+            """,
+            (user_id,)
+        )
+
+        user = cursor.fetchone()
+
+        if user:
+
+            current_role = user[0]
+            active = user[1]
+
+            # proteger último admin
+            if (
+                current_role == "admin"
+                and role != "admin"
+                and active == 1
+            ):
+
+                total_admins = count_active_admins()
+
+                if total_admins <= 1:
+                    return (
+                        False,
+                        "Debe existir al menos "
+                        "un administrador activo"
+                    )
+
+        # update
+        cursor.execute(
+            f"""
+            UPDATE users
+            SET
+                role = {p()},
+                company_id = {p()}
+            WHERE id = {p()}
+            """,
+            (
+                role,
+                company_id,
+                user_id
+            )
+        )
 
         conn.commit()
+
         return True, "Usuario actualizado"
 
     except Exception as e:
-        conn.rollback()
+
+        if conn:
+            conn.rollback()
+
         return False, str(e)
 
     finally:
-        cursor.close()
-        conn.close()
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
 
 # -----------------------------
 # ACTIVAR / DESACTIVAR
 # -----------------------------
 def toggle_user(user_id, active):
-    conn = get_connection()
-    cursor = conn.cursor()
+
+    conn = None
+    cursor = None
 
     try:
-        cursor.execute(f"""
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # obtener usuario actual
+        cursor.execute(
+            f"""
+            SELECT role, active
+            FROM users
+            WHERE id = {p()}
+            """,
+            (user_id,)
+        )
+
+        user = cursor.fetchone()
+
+        if user:
+
+            role = user[0]
+            current_active = user[1]
+
+            # proteger último admin
+            if (
+                role == "admin"
+                and current_active == 1
+                and active == 0
+            ):
+
+                total_admins = count_active_admins()
+
+                if total_admins <= 1:
+                    return (
+                        False,
+                        "Debe existir al menos "
+                        "un administrador activo"
+                    )
+
+        # update
+        cursor.execute(
+            f"""
             UPDATE users
             SET active = {p()}
             WHERE id = {p()}
-        """, (active, user_id))
+            """,
+            (
+                active,
+                user_id
+            )
+        )
 
         conn.commit()
+
         return True, "Estado actualizado"
 
     except Exception as e:
-        conn.rollback()
+
+        if conn:
+            conn.rollback()
+
         return False, str(e)
 
     finally:
-        cursor.close()
-        conn.close()
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
 
 
 # -----------------------------
 # ELIMINAR
 # -----------------------------
 def delete_user(user_id):
-    conn = get_connection()
-    cursor = conn.cursor()
+
+    conn = None
+    cursor = None
 
     try:
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # obtener usuario
         cursor.execute(
-            f"DELETE FROM users WHERE id = {p()}",
+            f"""
+            SELECT role, active
+            FROM users
+            WHERE id = {p()}
+            """,
+            (user_id,)
+        )
+
+        user = cursor.fetchone()
+
+        if user:
+
+            role = user[0]
+            active = user[1]
+
+            # proteger último admin
+            if (
+                role == "admin"
+                and active == 1
+            ):
+
+                total_admins = count_active_admins()
+
+                if total_admins <= 1:
+                    return (
+                        False,
+                        "No puedes eliminar "
+                        "el último administrador"
+                    )
+
+        # delete
+        cursor.execute(
+            f"""
+            DELETE FROM users
+            WHERE id = {p()}
+            """,
             (user_id,)
         )
 
         conn.commit()
+
         return True, "Usuario eliminado"
 
     except Exception as e:
-        conn.rollback()
+
+        if conn:
+            conn.rollback()
+
         return False, str(e)
 
     finally:
-        cursor.close()
-        conn.close()
 
-def reset_password(user_id, new_password):
-    conn = get_connection()
-    cursor = conn.cursor()
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+
+# -----------------------------
+# RESET PASSWORD
+# -----------------------------
+def reset_password(
+    user_id,
+    new_password
+):
+
+    conn = None
+    cursor = None
 
     try:
-        hashed = hash_password(new_password)
 
-        cursor.execute(f"""
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        hashed = hash_password(
+            new_password
+        )
+
+        cursor.execute(
+            f"""
             UPDATE users
             SET password = {p()}
             WHERE id = {p()}
-        """, (hashed, user_id))
+            """,
+            (
+                hashed,
+                user_id
+            )
+        )
 
         conn.commit()
-        return True, "Contraseña actualizada"
+
+        return True, (
+            "Contraseña actualizada"
+        )
 
     except Exception as e:
-        conn.rollback()
+
+        if conn:
+            conn.rollback()
+
         return False, str(e)
 
     finally:
-        cursor.close()
-        conn.close()
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
