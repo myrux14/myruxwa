@@ -551,3 +551,67 @@ def reset_password(
 
         if conn:
             conn.close()
+
+# =========================================
+# INSERT USER
+# =========================================
+def insert_user(
+    username,
+    password,
+    role,
+    company_id
+):
+
+    import bcrypt
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_connection()
+
+        cursor = conn.cursor()
+
+        hashed = bcrypt.hashpw(
+            password.encode(),
+            bcrypt.gensalt()
+        ).decode()
+
+        cursor.execute("""
+            INSERT INTO users (
+                username,
+                password,
+                role,
+                active,
+                company_id
+            )
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            username,
+            hashed,
+            role,
+            1,
+            company_id
+        ))
+
+        conn.commit()
+
+        return True
+
+    except Exception as e:
+
+        print(
+            "Error insert_user:",
+            e
+        )
+
+        return False
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
