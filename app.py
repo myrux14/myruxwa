@@ -35,6 +35,24 @@ from core.migrations import (
 
 run_migrations()
 
+from modules.auth.service import (
+    create_user
+)
+
+try:
+
+    result = create_user(
+        "admin",
+        "admin123",
+        "admin",
+        1
+    )
+
+    print(result)
+
+except Exception as e:
+
+    print(e)
 # =========================================
 # IMPORTS
 # =========================================
