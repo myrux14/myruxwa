@@ -248,3 +248,24 @@ else:
     )
 
     st.stop()
+
+from core.database import get_connection
+import bcrypt
+
+conn = get_connection()
+cursor = conn.cursor()
+
+new_password = bcrypt.hashpw(
+    "admin123".encode(),
+    bcrypt.gensalt()
+).decode()
+
+cursor.execute("""
+    UPDATE users
+    SET password = ?
+    WHERE username = %s
+""", (new_password,))
+
+conn.commit()
+
+print("PASSWORD UPDATED")
