@@ -97,6 +97,25 @@ db_info = check_environment()
 
 logged = login()
 
+# =========================================
+# DEBUG PRODUCCIÓN
+# =========================================
+if "user" in st.session_state:
+
+    st.sidebar.write(
+        "DEBUG USER:"
+    )
+
+    st.sidebar.write(
+        st.session_state["user"]
+    )
+
+    st.sidebar.write(
+        type(
+            st.session_state["user"]
+        )
+    )
+
 if not logged:
 
     st.title(APP_NAME)
