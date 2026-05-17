@@ -5,6 +5,13 @@ import sqlite3
 from core.config import DATABASE_URL, DB_TYPE, DB_PATH
 from core.security import hash_password
 
+from core.config import (
+    DATABASE_URL,
+    DB_TYPE
+)
+
+
+
 
 # -----------------------------
 # CONEXIÓN
@@ -135,3 +142,17 @@ def init_db():
             cursor.close()
         if conn:
             conn.close()
+
+# =========================================
+# DB INFO
+# =========================================
+def get_db_info():
+
+    return {
+
+        "db": DATABASE_URL,
+
+        "host": DB_TYPE,
+
+        "user": "local"
+    }

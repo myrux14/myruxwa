@@ -1,25 +1,51 @@
-import streamlit as st
-from core.config import ENV, get_db_info
+from core.database import get_db_info
+from core.config import ENV
 
 
 def check_environment():
+
     info = get_db_info()
 
-    st.sidebar.markdown("### 🌍 Entorno")
+    # ======================================
+    # ALERTAS
+    # ======================================
+    alerts = []
 
-    st.sidebar.info(f"""
-ENV: {ENV}
-DB: {info['db']}
-HOST: {info['host']}
-USER: {info['user']}
-""")
+    # producción usando local
+    if (
 
-    # 🔴 ALERTA SI ESTÁS EN PRODUCCIÓN CON DB LOCAL
-    if ENV == "production" and "localhost" in info["host"]:
-        st.sidebar.error("⚠️ Producción usando DB local")
+        ENV == "production"
+        and "localhost" in info["host"]
 
-    # 🔴 ALERTA SI ESTÁS EN LOCAL CON DB DE PRODUCCIÓN
-    if ENV == "local" and "render" in info["host"]:
-        st.sidebar.warning("⚠️ Estás usando DB de producción en local")
+    ):
 
-    return info
+        alerts.append(
+            (
+                "error",
+                "⚠️ Producción usando DB local"
+            )
+        )
+
+    # local usando prod
+    if (
+
+        ENV == "local"
+        and "render" in info["host"]
+
+    ):
+
+        alerts.append(
+            (
+                "warning",
+                "⚠️ Estás usando DB producción"
+            )
+        )
+
+    return {
+
+        "env": ENV,
+        "db": info["db"],
+        "host": info["host"],
+        "user": info["user"],
+        "alerts": alerts
+    }

@@ -5,64 +5,144 @@ from modules.auth.service import login_user
 import uuid
 
 
+# =========================================
+# LOGOUT
+# =========================================
 def logout():
+
     st.query_params.clear()
-    st.session_state.clear()
-    st.session_state.logged_in = False
+
+    keys = list(
+        st.session_state.keys()
+    )
+
+    for key in keys:
+        del st.session_state[key]
 
 
+# =========================================
+# LOGIN
+# =========================================
 def login():
 
-    st.sidebar.markdown("### 🔐 Cuenta")
+    st.sidebar.markdown(
+        "### 🔐 Cuenta"
+    )
 
+    # =====================================
+    # INIT
+    # =====================================
     if "logged_in" not in st.session_state:
+
         st.session_state.logged_in = False
 
-    # -----------------------------
+    # =====================================
     # SESIÓN ACTIVA
-    # -----------------------------
-    if st.session_state.get("logged_in", False):
+    # =====================================
+    if st.session_state.get("logged_in"):
 
-        st.sidebar.success(f"👤 {st.session_state.get('user')}")
+        user = st.session_state.get("user")
 
-        if st.sidebar.button("Cerrar sesión"):
-            logout()
-            st.rerun()
+        # validar sesión
+        if isinstance(user, dict):
 
-        return True
+            st.sidebar.success(
+                f"👤 {user['username']}"
+            )
 
-    # -----------------------------
-    # LOGIN
-    # -----------------------------
-    username = st.sidebar.text_input("Usuario")
-    password = st.sidebar.text_input("Contraseña", type="password")
+            if st.sidebar.button(
+                "Cerrar sesión"
+            ):
+
+                logout()
+                st.rerun()
+
+            return True
+
+    # =====================================
+    # LOGIN FORM
+    # =====================================
+    username = st.sidebar.text_input(
+        "Usuario"
+    )
+
+    password = st.sidebar.text_input(
+        "Contraseña",
+        type="password"
+    )
 
     if st.sidebar.button("Entrar"):
 
-        user = login_user(username, password)
+        user = login_user(
+            username,
+            password
+        )
 
+        # =================================
+        # USER INACTIVE
+        # =================================
         if user == "inactive":
-            st.sidebar.error("Usuario desactivado")
 
-        elif user:
-            token = str(uuid.uuid4())
+            st.sidebar.error(
+                "Usuario desactivado"
+            )
 
-            st.session_state.logged_in = True
-            st.session_state.user = user["username"]
-            st.session_state.role = user["role"]
-            st.session_state.company_id = user["company_id"]
-            st.session_state.token = token
+        # =================================
+        # LOGIN OK
+        # =================================
+        elif isinstance(user, dict):
 
+            token = str(
+                uuid.uuid4()
+            )
+
+            # sesión
+            st.session_state[
+                "logged_in"
+            ] = True
+
+            st.session_state[
+                "user"
+            ] = user
+
+            st.session_state[
+                "role"
+            ] = user["role"]
+
+            st.session_state[
+                "company_id"
+            ] = user["company_id"]
+
+            st.session_state[
+                "token"
+            ] = token
+
+            # persistencia URL
             st.query_params.update({
+
                 "token": token,
-                "user": user["username"],
-                "role": user["role"],
-                "company_id": str(user["company_id"])
+
+                "username":
+                    user["username"],
+
+                "role":
+                    user["role"],
+
+                "company_id":
+                    str(
+                        user["company_id"]
+                    )
             })
 
             st.rerun()
 
+        # =================================
+        # LOGIN ERROR
+        # =================================
         else:
-            st.sidebar.error("Credenciales incorrectas")
 
-    return st.session_state.logged_in
+            st.sidebar.error(
+                "Credenciales incorrectas"
+            )
+
+    return False
