@@ -81,9 +81,9 @@ def login():
         # =========================================
         # DEBUG LOGIN
         # =========================================
-        st.write("LOGIN RESULT:")
-        st.write(user)
-        st.write(type(user))
+        st.sidebar.write("DEBUG LOGIN:")
+        st.sidebar.write(user)
+        st.sidebar.write(type(user))
 
         # =================================
         # USER INACTIVE

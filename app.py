@@ -18,60 +18,42 @@ from core.optimizer import (
     ajustar_parametros
 )
 
-# 🔥 SIEMPRE PRIMERO
+# =========================================
+# CONFIG STREAMLIT
+# =========================================
 st.set_page_config(
     page_title="Water Analytics",
     layout="wide"
 )
 
-from core.migrations import run_migrations
+# =========================================
+# MIGRATIONS
+# =========================================
+from core.migrations import (
+    run_migrations
+)
 
 run_migrations()
 
-# ahora sí imports
-from core.config import APP_NAME, ENV
-from core.database import init_db
-from modules.auth.ui import login
-
 # =========================================
-# RESTAURAR SESIÓN DESDE URL
+# IMPORTS
 # =========================================
-params = st.query_params
+from core.config import (
+    APP_NAME,
+    ENV
+)
 
-if (
+from core.database import (
+    init_db
+)
 
-    "token" in params
-    and "username" in params
-    and "role" in params
+from modules.auth.ui import (
+    login
+)
 
-):
-
-    st.session_state.logged_in = True
-
-    st.session_state.user = {
-
-        "username":
-            params.get("username"),
-
-        "role":
-            params.get("role"),
-
-        "company_id":
-            int(params.get("company_id"))
-    }
-
-    st.session_state.role = (
-        params.get("role")
-    )
-
-    st.session_state.company_id = int(
-        params.get("company_id")
-    )
-
-    st.session_state.token = (
-        params.get("token")
-    )
-
+from core.env_check import (
+    check_environment
+)
 
 # =========================================
 # INIT DB SOLO LOCAL
@@ -86,35 +68,49 @@ if (
 
     init_db()
 
-    st.session_state.db_initialized = True
+    st.session_state[
+        "db_initialized"
+    ] = True
+
+# =========================================
+# RESTAURAR SESIÓN
+# =========================================
+params = st.query_params
+
+if (
+
+    "token" in params
+    and "role" in params
+    and "company_id" in params
+    and "logged_in"
+    not in st.session_state
+
+):
+
+    st.session_state[
+        "logged_in"
+    ] = True
+
+    st.session_state[
+        "token"
+    ] = params.get("token")
+
+    st.session_state[
+        "role"
+    ] = params.get("role")
+
+    st.session_state[
+        "company_id"
+    ] = int(
+        params.get("company_id")
+    )
 
 # =========================================
 # LOGIN
 # =========================================
-from core.env_check import check_environment
-
 db_info = check_environment()
 
 logged = login()
-
-# =========================================
-# DEBUG PRODUCCIÓN
-# =========================================
-if "user" in st.session_state:
-
-    st.sidebar.write(
-        "DEBUG USER:"
-    )
-
-    st.sidebar.write(
-        st.session_state["user"]
-    )
-
-    st.sidebar.write(
-        type(
-            st.session_state["user"]
-        )
-    )
 
 if not logged:
 
@@ -234,5 +230,3 @@ else:
     )
 
     st.stop()
-
-
